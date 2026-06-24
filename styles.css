@@ -26,12 +26,13 @@ body {
 
 button,
 input,
+select,
 textarea {
   font: inherit;
 }
 
 .tool-shell {
-  width: min(1040px, calc(100% - 32px));
+  width: min(1120px, calc(100% - 32px));
   margin: 0 auto;
   padding: 40px 0;
 }
@@ -73,7 +74,7 @@ h2 {
 }
 
 .lede {
-  max-width: 720px;
+  max-width: 780px;
   color: var(--muted);
   font-size: 1.05rem;
 }
@@ -130,7 +131,8 @@ textarea {
   background: #fff;
 }
 
-input {
+input,
+select {
   width: 100%;
   min-height: 46px;
   padding: 10px 12px;
@@ -138,6 +140,21 @@ input {
   border-radius: 8px;
   color: var(--ink);
   background: #fff;
+}
+
+select {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 20px, calc(100% - 12px) 20px;
+  background-repeat: no-repeat;
+  background-size: 6px 6px;
+  padding-right: 34px;
+}
+
+input[type="color"] {
+  height: 46px;
+  padding: 5px;
+  cursor: pointer;
 }
 
 .actions {
@@ -174,6 +191,43 @@ button.ghost,
   background: #fff;
 }
 
+.brand-tools {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.section-heading,
+.result-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.section-heading .ghost {
+  flex: 0 0 auto;
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.field-grid label {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.field-grid input,
+.field-grid select {
+  margin-top: 8px;
+  color: var(--ink);
+  font-weight: 600;
+}
+
 .results {
   display: grid;
   gap: 16px;
@@ -182,13 +236,6 @@ button.ghost,
 
 .result-block.recommended {
   border-color: rgba(39, 114, 79, 0.45);
-}
-
-.result-heading {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  align-items: flex-start;
 }
 
 .copy-button {
@@ -208,8 +255,8 @@ button.ghost,
 
 .qr-layout {
   display: grid;
-  grid-template-columns: 292px minmax(0, 1fr);
-  gap: 18px;
+  grid-template-columns: 348px minmax(0, 1fr);
+  gap: 20px;
   align-items: center;
   margin-top: 16px;
 }
@@ -217,8 +264,8 @@ button.ghost,
 .qr-card {
   display: grid;
   place-items: center;
-  width: 292px;
-  min-height: 292px;
+  width: 348px;
+  min-height: 460px;
   padding: 15px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -227,8 +274,9 @@ button.ghost,
 
 #qrCanvas {
   display: block;
-  width: 260px;
-  height: 260px;
+  width: min(316px, 100%);
+  height: auto;
+  aspect-ratio: 960 / 1229;
 }
 
 .qr-actions {
@@ -262,18 +310,9 @@ dd {
   font-weight: 700;
 }
 
-@media (max-width: 720px) {
-  .hero,
-  .result-heading {
-    display: block;
-  }
-
-  .status-card {
-    margin-top: 16px;
-  }
-
-  .copy-button {
-    margin-bottom: 12px;
+@media (max-width: 900px) {
+  .field-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .qr-layout {
@@ -282,8 +321,27 @@ dd {
 
   .qr-card {
     width: 100%;
+    min-height: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .hero,
+  .section-heading,
+  .result-heading {
+    display: block;
   }
 
+  .status-card,
+  .section-heading .ghost {
+    margin-top: 16px;
+  }
+
+  .copy-button {
+    margin-bottom: 12px;
+  }
+
+  .field-grid,
   dl {
     grid-template-columns: 1fr;
   }
