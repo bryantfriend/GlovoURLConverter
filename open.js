@@ -39,10 +39,10 @@
 
   function trackClick() {
     if (!window.QRAnalytics || typeof window.QRAnalytics.trackClick !== "function") {
-      return;
+      return Promise.resolve(false);
     }
 
-    window.QRAnalytics.trackClick({
+    return window.QRAnalytics.trackClick({
       linkId: params.get("lid") || "",
       companyId: params.get("cid") || "kyrgyz-organics",
       brand: params.get("brand") || "",
@@ -55,10 +55,16 @@
     });
   }
 
-  message.textContent = "Opening the exact Glovo web product. Use the button if your browser blocks the automatic navigation.";
-  trackClick();
-
-  window.setTimeout(() => {
+  function redirectSoon() {
     window.location.replace(target.href);
-  }, 500);
+  }
+
+  message.textContent = "Opening the exact Glovo web product. Use the button if your browser blocks the automatic navigation.";
+
+  Promise.race([
+    trackClick(),
+    new Promise((resolve) => window.setTimeout(resolve, 350)),
+  ]).finally(() => {
+    window.setTimeout(redirectSoon, 150);
+  });
 })();
