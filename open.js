@@ -37,9 +37,28 @@
     fallbackForm.appendChild(input);
   });
 
+  function trackClick() {
+    if (!window.QRAnalytics || typeof window.QRAnalytics.trackClick !== "function") {
+      return;
+    }
+
+    window.QRAnalytics.trackClick({
+      linkId: params.get("lid") || "",
+      companyId: params.get("cid") || "kyrgyz-organics",
+      brand: params.get("brand") || "",
+      label: params.get("label") || "",
+      code: params.get("code") || "",
+      targetUrl: target.href,
+      productId: target.searchParams.get("productId") || "",
+      externalProductId: target.searchParams.get("externalProductId") || "",
+      landingPath: window.location.pathname,
+    });
+  }
+
   message.textContent = "Opening the exact Glovo web product. Use the button if your browser blocks the automatic navigation.";
+  trackClick();
 
   window.setTimeout(() => {
     window.location.replace(target.href);
-  }, 350);
+  }, 500);
 })();

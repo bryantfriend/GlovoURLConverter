@@ -18,6 +18,7 @@
 
   const brandControls = {
     brandName: document.getElementById("brandName"),
+    companyId: document.getElementById("companyId"),
     productName: document.getElementById("productName"),
     productCode: document.getElementById("productCode"),
     badgeText: document.getElementById("badgeText"),
@@ -29,6 +30,7 @@
 
   const defaultStyle = {
     brandName: "",
+    companyId: "kyrgyz-organics",
     productName: "",
     productCode: "",
     badgeText: "",
@@ -46,6 +48,7 @@
   };
 
   let renderToken = 0;
+  let currentCanonicalUrl = "";
 
   function setStatus(message, isError) {
     statusText.textContent = message;
@@ -106,9 +109,14 @@
     return url.href;
   }
 
-  function buildLandingUrl(canonicalUrl) {
+  function buildLandingUrl(canonicalUrl, settings) {
     const openUrl = new URL("open.html", window.location.href);
     openUrl.searchParams.set("u", canonicalUrl);
+    openUrl.searchParams.set("lid", buildLinkId(canonicalUrl, settings));
+    openUrl.searchParams.set("cid", settings.companyId);
+    openUrl.searchParams.set("brand", settings.brand);
+    openUrl.searchParams.set("label", settings.product);
+    openUrl.searchParams.set("code", settings.code);
     return openUrl.href;
   }
 
@@ -131,11 +139,35 @@
       product,
       code,
       badge: badge.slice(0, 6).toUpperCase(),
+      companyId: normalizeCompanyId(getText("companyId", defaultStyle.companyId)),
       qrColor: brandControls.qrColor.value || defaultStyle.qrColor,
       backgroundColor: brandControls.backgroundColor.value || defaultStyle.backgroundColor,
       accentColor: brandControls.accentColor.value || defaultStyle.accentColor,
       size: Number(brandControls.qrSize.value) || Number(defaultStyle.qrSize),
     };
+  }
+
+  function normalizeCompanyId(value) {
+    return String(value || defaultStyle.companyId)
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 80) || defaultStyle.companyId;
+  }
+
+  function buildLinkId(canonicalUrl, settings) {
+    const source = `${settings.companyId}|${canonicalUrl}|${settings.brand}|${settings.product}|${settings.code}`;
+    return `qr-${hashString(source)}`;
+  }
+
+  function hashString(value) {
+    let hash = 2166136261;
+    for (let i = 0; i < value.length; i += 1) {
+      hash ^= value.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(36);
   }
 
   function humanizeSlug(slug) {
@@ -241,11 +273,8 @@
   function renderRawQr(canvas, value, options) {
     return new Promise((resolve, reject) => {
       window.QRCode.toCanvas(canvas, value, options, (error) => {
-        if (error) {
-          reject(error);
-        } else {
-          resolve();
-        }
+        if (error) reject(error);
+        else resolve();
       });
     });
   }
@@ -294,9 +323,7 @@
       return;
     }
 
-    if (token !== renderToken) {
-      return;
-    }
+    if (token !== renderToken) return;
 
     const textColor = textColorFor(settings.backgroundColor);
     qrWarning.hidden = true;
@@ -363,10 +390,13 @@
       .replace(/^-+|-+$/g, "") || "product";
   }
 
+  function refreshLandingUrl() {
+    if (!currentCanonicalUrl) return;
+    landingUrl.value = buildLandingUrl(currentCanonicalUrl, getQrSettings());
+  }
+
   function downloadQrCode() {
-    if (!landingUrl.value) {
-      return;
-    }
+    if (!landingUrl.value) return;
 
     const settings = getQrSettings();
     const productId = fields.productId.textContent && fields.productId.textContent !== "-"
@@ -392,7 +422,7 @@
   function convert() {
     try {
       const parsed = parseGlovoUrl(sourceUrl.value);
-      landingUrl.value = buildLandingUrl(parsed.canonical);
+      currentCanonicalUrl = parsed.canonical;
       trailingDotUrl.value = buildTrailingDotUrl(parsed.canonical);
 
       fields.storeSlug.textContent = parsed.storeSlug;
@@ -400,21 +430,21 @@
       fields.externalProductId.textContent = parsed.externalProductId;
       fields.contentPath.textContent = parsed.content || "-";
       fillDefaultProductFields(parsed);
+      refreshLandingUrl();
 
       results.hidden = false;
       drawQrCode(landingUrl.value);
-      setStatus("Converted", false);
+      setStatus("Converted with analytics ID", false);
     } catch (error) {
       results.hidden = true;
+      currentCanonicalUrl = "";
       setStatus(error.message, true);
     }
   }
 
   async function copyValue(targetId) {
     const target = document.getElementById(targetId);
-    if (!target || !target.value) {
-      return;
-    }
+    if (!target || !target.value) return;
 
     try {
       await navigator.clipboard.writeText(target.value);
@@ -427,6 +457,7 @@
   }
 
   function refreshQr() {
+    refreshLandingUrl();
     if (!results.hidden && landingUrl.value) {
       drawQrCode(landingUrl.value);
     }
@@ -448,6 +479,7 @@
   clearButton.addEventListener("click", () => {
     sourceUrl.value = "";
     results.hidden = true;
+    currentCanonicalUrl = "";
     setStatus("Ready", false);
     sourceUrl.focus();
   });
@@ -460,16 +492,12 @@
   });
 
   sourceUrl.addEventListener("input", () => {
-    if (sourceUrl.value.trim()) {
-      setStatus("Ready to convert", false);
-    } else {
-      setStatus("Ready", false);
-    }
+    if (sourceUrl.value.trim()) setStatus("Ready to convert", false);
+    else setStatus("Ready", false);
   });
 
   Object.values(brandControls).forEach((control) => {
-    const eventName = control.type === "color" || control.tagName === "SELECT" ? "input" : "input";
-    control.addEventListener(eventName, refreshQr);
+    control.addEventListener("input", refreshQr);
   });
 
   window.addEventListener("load", () => {
