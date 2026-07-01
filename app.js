@@ -325,6 +325,102 @@
     }
   }
 
+
+  function readCoordinateValue(value) {
+    const number = Number.parseFloat(String(value || '').trim());
+    return Number.isFinite(number) ? number : null;
+  }
+
+  function isValidLatitude(value) {
+    return Number.isFinite(value) && value >= -90 && value <= 90;
+  }
+
+  function isValidLongitude(value) {
+    return Number.isFinite(value) && value >= -180 && value <= 180;
+  }
+
+  function formatCoordinate(value) {
+    return Number(value.toFixed(7)).toString();
+  }
+
+  function normalizeCoordinatePair(first, second, preferLongitudeFirst) {
+    const a = Number.parseFloat(first);
+    const b = Number.parseFloat(second);
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+
+    if (preferLongitudeFirst && isValidLongitude(a) && isValidLatitude(b)) {
+      return { latitude: b, longitude: a };
+    }
+    if (isValidLatitude(a) && isValidLongitude(b)) {
+      return { latitude: a, longitude: b };
+    }
+    if (isValidLongitude(a) && isValidLatitude(b)) {
+      return { latitude: b, longitude: a };
+    }
+    return null;
+  }
+
+  function decodeMapFragment(value) {
+    let decoded = String(value || '');
+    for (let index = 0; index < 2; index += 1) {
+      try {
+        const next = decodeURIComponent(decoded);
+        if (next === decoded) break;
+        decoded = next;
+      } catch (error) {
+        break;
+      }
+    }
+    return decoded.replace(/\+/g, ' ');
+  }
+
+  function extractCoordinatesFromMapUrl(value) {
+    const clean = String(value || '').trim();
+    if (!clean) return null;
+
+    const fragments = [];
+    let preferLongitudeFirst = false;
+    try {
+      const url = new URL(clean);
+      const host = url.hostname.replace(/\.$/, '').toLowerCase();
+      preferLongitudeFirst = host.includes('2gis.') || host.endsWith('2gis.com');
+      ['m', 'll', 'sll', 'point', 'pt', 'q', 'query', 'whatshere[point]'].forEach(function (key) {
+        url.searchParams.getAll(key).forEach(function (entry) { fragments.push(entry); });
+      });
+      fragments.push(url.pathname, url.search, url.hash, url.href);
+    } catch (error) {
+      fragments.push(clean);
+    }
+
+    for (const fragment of fragments) {
+      const decoded = decodeMapFragment(fragment);
+      const pairPattern = /(-?\d{1,3}\.\d+)\s*[,;]\s*(-?\d{1,3}\.\d+)/g;
+      let match;
+      while ((match = pairPattern.exec(decoded))) {
+        const coordinates = normalizeCoordinatePair(match[1], match[2], preferLongitudeFirst);
+        if (coordinates) return coordinates;
+      }
+    }
+    return null;
+  }
+
+  function applyCoordinatesFromMapUrl(overwrite) {
+    if (!locationControls.mapUrl) return false;
+    const coordinates = extractCoordinatesFromMapUrl(locationControls.mapUrl.value);
+    if (!coordinates) return false;
+
+    let changed = false;
+    if (locationControls.latitude && (overwrite || !getControlValue(locationControls.latitude))) {
+      locationControls.latitude.value = formatCoordinate(coordinates.latitude);
+      changed = true;
+    }
+    if (locationControls.longitude && (overwrite || !getControlValue(locationControls.longitude))) {
+      locationControls.longitude.value = formatCoordinate(coordinates.longitude);
+      changed = true;
+    }
+    return changed;
+  }
+
   function createProductHub(glovoParsed, yandexParsed, settings) {
     const now = new Date().toISOString();
     const productName = getControlValue(brandControls.productName) || settings.product;
@@ -511,6 +607,7 @@
   function readLocationDraft() {
     const name = getControlValue(locationControls.name);
     const mapUrl = isSafeOptionalUrl(getControlValue(locationControls.mapUrl), "Map URL");
+    if (mapUrl) applyCoordinatesFromMapUrl(false);
     if (!name && !mapUrl && !getControlValue(locationControls.address)) {
       throw new Error("Add a location name, address, or map URL first.");
     }
@@ -518,8 +615,8 @@
       id: "loc-" + hashString(name + "|" + Date.now()),
       name: name || "Pickup location",
       address: getControlValue(locationControls.address),
-      latitude: Number.parseFloat(getControlValue(locationControls.latitude)) || null,
-      longitude: Number.parseFloat(getControlValue(locationControls.longitude)) || null,
+      latitude: readCoordinateValue(getControlValue(locationControls.latitude)),
+      longitude: readCoordinateValue(getControlValue(locationControls.longitude)),
       phone: getControlValue(locationControls.phone),
       hours: getControlValue(locationControls.hours),
       mapUrl,
@@ -1117,6 +1214,20 @@
       }
     });
   }
+
+  if (locationControls.mapUrl) {
+    const applyMapCoordinates = function () {
+      if (applyCoordinatesFromMapUrl(true)) {
+        setStatus("Coordinates extracted from map URL", false);
+      }
+    };
+    locationControls.mapUrl.addEventListener("paste", function () {
+      window.setTimeout(applyMapCoordinates, 0);
+    });
+    locationControls.mapUrl.addEventListener("change", applyMapCoordinates);
+    locationControls.mapUrl.addEventListener("blur", applyMapCoordinates);
+  }
+
   if (clearHistoryButton) {
     clearHistoryButton.addEventListener("click", function () {
       if (window.ProductHubStorage) window.ProductHubStorage.clearProductHubs();
