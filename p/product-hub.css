@@ -53,6 +53,7 @@ h1 { margin: 0; font-family: Georgia, 'Times New Roman', serif; font-size: clamp
 .action-icon { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 16px; color: #fff; background: var(--primary); font-size: 1.75rem; font-weight: 900; }
 .action-icon.glovo { background: linear-gradient(135deg, #ffd233, #ffc21c); color: #009d80; }
 .action-icon.yandex { background: linear-gradient(135deg, #ff4b2f, #f22f22); color: #fff; }
+.action-icon.whatsapp { background: linear-gradient(135deg, #25d366, #128c7e); color: #fff; }
 .action-icon.map { background: linear-gradient(135deg, #6f4b39, #3d241d); color: #fff; }
 .action-card strong, .action-card span { display: block; }
 .action-card strong { font-size: 1.22rem; line-height: 1.15; }

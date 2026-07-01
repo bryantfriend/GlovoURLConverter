@@ -1,6 +1,6 @@
 # Product Link & QR Hub
 
-Static Smart Product Link Hub for creating one customer-facing product page and one branded QR code for Glovo, Yandex, and pickup locations.
+Static Smart Product Link Hub for creating one customer-facing product page and one branded QR code for Glovo, Yandex, WhatsApp contact, and pickup locations.
 
 The app still preserves the original Glovo exact web product behavior, but the QR/Instagram/TikTok link now points to your own public product hub page first.
 
@@ -19,15 +19,16 @@ QR / Instagram / TikTok link
 - Keeps the working Glovo product URL parser for `productId`, `externalProductId`, store slug, and content path.
 - Uses the existing compact Glovo `/q/?s=...&c=...&p=...&e=...` route for the Glovo action so exact web product behavior is preserved.
 - Accepts conservative Yandex-related URLs, including `yandex.*`, `eda.yandex.kg`, `ya.cc`, and `yandexgo.*`, and preserves the pasted URL unless a simple Eats restaurant route can safely use `/q/?y=...`.
+- Adds a WhatsApp contact button using the product owner phone number.
 - Adds pickup locations with name, address, hours, phone, latitude, longitude, and map URL.
 - Generates a public `/p/?h=...` product hub link and renders the QR from that hub link.
-- Provides a mobile-first public product page with action cards for Glovo, Yandex, and pickup.
+- Provides a mobile-first public product page with action cards for Glovo, Yandex, WhatsApp, and pickup.
 - Stores admin history/drafts in `localStorage` through `storageAdapter.js`.
 - Records public page interactions locally for MVP testing. Provider redirects still use existing QR/open analytics where applicable.
 
 ## Files
 
-- `index.html` - admin builder for product details, delivery links, provider link finder modal, pickup locations, brand controls, QR preview, and history.
+- `index.html` - admin builder for product details, delivery links, WhatsApp contact, provider link finder modal, pickup locations, brand controls, QR preview, and history.
 - `app.js` - URL parsing, product hub model creation, public hub link generation, QR rendering, download, copy, and history wiring.
 - `storageAdapter.js` - localStorage adapter for product hubs and local analytics events.
 - `p/index.html` - public product hub route.

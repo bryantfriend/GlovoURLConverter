@@ -49,6 +49,7 @@
   function iconClassFor(action) {
     if (action === "glovo_click") return "glovo";
     if (action === "yandex_click") return "yandex";
+    if (action === "whatsapp_click") return "whatsapp";
     return "map";
   }
 
@@ -157,6 +158,7 @@
     let actionCount = 0;
     if (hub.glovoLink && hub.glovoLink.enabled) { actions.appendChild(buildAction(hub.glovoLink, "glovo_click", "G", actionCount === 0, hub)); actionCount += 1; }
     if (hub.yandexLink && hub.yandexLink.enabled) { actions.appendChild(buildAction(hub.yandexLink, "yandex_click", "Y", actionCount === 0, hub)); actionCount += 1; }
+    if (hub.whatsappLink && hub.whatsappLink.enabled) { actions.appendChild(buildAction(hub.whatsappLink, "whatsapp_click", "W", actionCount === 0, hub)); actionCount += 1; }
     if (locations.length) {
       const button = document.createElement("button");
       button.type = "button";
@@ -196,8 +198,11 @@
     if (!locations.length) {
       root.querySelector(".info-card .info-tile:first-child span:last-child").textContent = "Add a pickup location to show pickup details.";
     }
-    if (!hub.glovoLink.enabled && !hub.yandexLink.enabled) {
-      root.querySelector(".info-card .info-tile:last-child span:last-child").textContent = "Add Glovo or Yandex to show delivery details.";
+    const hasGlovo = hub.glovoLink && hub.glovoLink.enabled;
+    const hasYandex = hub.yandexLink && hub.yandexLink.enabled;
+    const hasWhatsApp = hub.whatsappLink && hub.whatsappLink.enabled;
+    if (!hasGlovo && !hasYandex) {
+      root.querySelector(".info-card .info-tile:last-child span:last-child").textContent = hasWhatsApp ? "Message the product owner for ordering details." : "Add Glovo, Yandex, or WhatsApp to show ordering details.";
     }
     if (!actions.children.length) showState("Product link not ready", "No order or pickup action is available yet.");
     recordLocal("page_view", hub);

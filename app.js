@@ -40,6 +40,7 @@
     campaignName: document.getElementById("campaignName"),
     priceText: document.getElementById("priceText"),
     heroBadgeText: document.getElementById("heroBadgeText"),
+    whatsappPhone: document.getElementById("whatsappPhone"),
   };
 
   const locationControls = {
@@ -67,6 +68,7 @@
     campaignName: document.getElementById("campaignName"),
     priceText: document.getElementById("priceText"),
     heroBadgeText: document.getElementById("heroBadgeText"),
+    whatsappPhone: document.getElementById("whatsappPhone"),
   };
 
   const defaultStyle = {
@@ -84,6 +86,7 @@
     campaignName: "",
     priceText: "",
     heroBadgeText: "Made fresh daily",
+    whatsappPhone: "",
   };
 
   const fields = {
@@ -326,6 +329,31 @@
   }
 
 
+
+  function normalizeWhatsAppPhone(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    const digits = raw.replace(/\D/g, '');
+    if (digits.length < 8 || digits.length > 15) {
+      throw new Error('WhatsApp number must include country code, for example +996 555 123 456.');
+    }
+    return digits;
+  }
+
+  function buildWhatsAppLink(productName) {
+    const phone = normalizeWhatsAppPhone(getControlValue(brandControls.whatsappPhone));
+    if (!phone) return { enabled: false };
+    const message = 'Hi, I am interested in ' + productName + '.';
+    return {
+      enabled: true,
+      phone,
+      convertedUrl: 'https://wa.me/' + phone + '?text=' + encodeURIComponent(message),
+      buttonLabel: 'Contact on WhatsApp',
+      helperText: 'Message the product owner',
+      platformName: 'WhatsApp',
+    };
+  }
+
   function readCoordinateValue(value) {
     const number = Number.parseFloat(String(value || '').trim());
     return Number.isFinite(number) ? number : null;
@@ -427,6 +455,7 @@
     const slug = slugify(settings.companyId + "-" + (productName || "product") + "-" + (settings.code || Date.now().toString(36))).slice(0, 90);
     const productImageUrl = isSafeOptionalUrl(getControlValue(extraControls.productImageUrl), "Product image URL");
     const activeLocations = pickupLocations.filter(function (location) { return location.active !== false; });
+    const whatsappLink = buildWhatsAppLink(productName);
     const glovoLink = glovoParsed ? {
       enabled: true,
       originalUrl: glovoParsed.url.href,
@@ -452,8 +481,8 @@
     if (!productName) {
       throw new Error("Add a product name before publishing the hub.");
     }
-    if (!glovoLink.enabled && !yandexLink.enabled && activeLocations.length === 0) {
-      throw new Error("Add at least one way for customers to order or find this product.");
+    if (!glovoLink.enabled && !yandexLink.enabled && !whatsappLink.enabled && activeLocations.length === 0) {
+      throw new Error("Add at least one way for customers to order, message, or find this product.");
     }
 
     return {
@@ -474,6 +503,7 @@
       updatedAt: now,
       glovoLink,
       yandexLink,
+      whatsappLink,
       locations: activeLocations,
       branding: {
         logoUrl: "",
@@ -491,6 +521,7 @@
         glovoClickCount: 0,
         yandexClickCount: 0,
         mapClickCount: 0,
+        whatsappClickCount: 0,
         lastClickedAt: "",
       },
     };
@@ -525,6 +556,7 @@
       active: hub.active,
       glovoLink: publicLink(hub.glovoLink),
       yandexLink: publicLink(hub.yandexLink),
+      whatsappLink: publicLink(hub.whatsappLink),
       locations: hub.locations.map(function (location) {
         return {
           id: location.id,
@@ -563,6 +595,7 @@
     const actions = [];
     if (hub.glovoLink && hub.glovoLink.enabled) actions.push("Glovo");
     if (hub.yandexLink && hub.yandexLink.enabled) actions.push("Yandex");
+    if (hub.whatsappLink && hub.whatsappLink.enabled) actions.push("WhatsApp");
     if (hub.locations && hub.locations.length) actions.push("Pickup");
     return actions.join(", ") || "No actions yet";
   }
