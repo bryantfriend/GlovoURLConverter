@@ -42,9 +42,9 @@ QR / Instagram / TikTok link
 
 ## Link Finder Workflow
 
-The admin builder includes **Find on Glovo** and **Find on Yandex** buttons. The modal attempts to show the provider website and also offers an **Open website** button. After navigating to a product or store page, copy the browser URL, return to the modal, paste it, then click **Use this link**.
+The admin builder includes **Find on Glovo** and **Find on Yandex** buttons. The modal opens provider websites in a new tab because Glovo and Yandex block iframe embedding. After navigating to a product or store page, copy the browser URL, return to the modal, paste it, then click **Use this link**.
 
-Browser security prevents this static app from reading the current URL inside a cross-origin Glovo/Yandex page automatically, and some provider pages block iframe embedding. The modal therefore uses the safest reliable workflow: open, navigate, paste/capture, validate, and convert.
+Browser security prevents this static app from reading the current URL inside a cross-origin Glovo/Yandex page automatically, and provider pages block iframe embedding. The modal therefore uses the safest reliable workflow: open, navigate, paste/capture, validate, and convert.
 
 ## Public Hub Links
 
@@ -81,7 +81,7 @@ Yandex is conservative in this MVP:
 
 ## Pickup Locations
 
-If one pickup location exists, the public map button opens its `mapUrl` directly. If multiple locations exist, the public page opens a locations panel. Browser geolocation is requested only after the customer taps the map action, and locations with coordinates are sorted by distance when permission is granted.
+If one pickup location exists, the public map button opens its `mapUrl` directly. If multiple locations exist, the public page opens a locations panel. Browser geolocation is requested only after the customer taps the map action, and locations with coordinates are sorted by distance when permission is granted. 2GIS object/path coordinates are preferred over map viewport coordinates.
 
 ## Manual Testing
 

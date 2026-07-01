@@ -79,6 +79,27 @@
     return radius * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
   }
 
+
+  function hasCoordinates(location) {
+    return Number.isFinite(location.latitude) && Number.isFinite(location.longitude);
+  }
+
+  function formatDistance(km) {
+    if (!Number.isFinite(km)) return '';
+    if (km < 1) return Math.round(km * 1000) + ' m away';
+    return km.toFixed(1) + ' km away';
+  }
+
+  function sortLocationsByDistance(locations, here) {
+    return locations.slice().map(function (location) {
+      if (hasCoordinates(location)) {
+        const km = distanceKm(here, location);
+        return Object.assign({}, location, { distance: km, distanceText: formatDistance(km), previewLabel: 'Nearest location' });
+      }
+      return location;
+    }).sort(function (a, b) { return (a.distance || 999999) - (b.distance || 999999); });
+  }
+
   function renderLocations(panel, locations, hub) {
     panel.innerHTML = "";
     locations.forEach(function (location) {
@@ -111,16 +132,16 @@
 
   function renderLocationPreview(location) {
     if (!location) return "";
-    const hours = text(location.hours, "Pickup available");
-    return '<section class="location-preview"><div class="map-art"></div><div class="map-pin"><span>●</span></div><div class="location-preview-content"><span class="mini-label">Nearest location</span><strong></strong><span class="location-address"></span><small><span class="open-text">Open</span> · <span class="location-hours"></span></small></div></section>';
+    return '<section class="location-preview"><div class="map-art"></div><div class="map-pin"><span>●</span></div><div class="location-preview-content"><span class="mini-label"></span><strong></strong><span class="location-address"></span><small><span class="location-hours"></span></small></div></section>';
   }
 
   function hydrateLocationPreview(location) {
     const preview = root.querySelector(".location-preview");
     if (!preview || !location) return;
+    preview.querySelector(".mini-label").textContent = text(location.previewLabel, "Pickup location");
     preview.querySelector("strong").textContent = text(location.name, "Pickup location");
     preview.querySelector(".location-address").textContent = text(location.address, "Pickup available");
-    preview.querySelector(".location-hours").textContent = text(location.hours, "Hours vary");
+    preview.querySelector(".location-hours").textContent = location.distanceText || text(location.hours, "Hours vary");
   }
 
   function renderHub(hub) {
@@ -176,14 +197,9 @@
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(function (position) {
             const here = { latitude: position.coords.latitude, longitude: position.coords.longitude };
-            const sorted = locations.slice().map(function (location) {
-              if (Number.isFinite(location.latitude) && Number.isFinite(location.longitude)) {
-                const km = distanceKm(here, location);
-                return Object.assign({}, location, { distance: km, distanceText: km.toFixed(1) + " km away" });
-              }
-              return location;
-            }).sort(function (a, b) { return (a.distance || 999999) - (b.distance || 999999); });
+            const sorted = sortLocationsByDistance(locations, here);
             renderLocations(panel, sorted, hub);
+            hydrateLocationPreview(sorted[0]);
           }, function () {
             renderLocations(panel, locations, hub);
           }, { enableHighAccuracy: false, timeout: 6000, maximumAge: 300000 });

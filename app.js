@@ -26,7 +26,6 @@
   const historyList = document.getElementById("historyList");
   const clearHistoryButton = document.getElementById("clearHistoryButton");
   const linkFinderModal = document.getElementById("linkFinderModal");
-  const linkFinderFrame = document.getElementById("linkFinderFrame");
   const linkFinderUrl = document.getElementById("linkFinderUrl");
   const linkFinderProviderName = document.getElementById("linkFinderProviderName");
   const linkFinderHelp = document.getElementById("linkFinderHelp");
@@ -412,10 +411,18 @@
       const url = new URL(clean);
       const host = url.hostname.replace(/\.$/, '').toLowerCase();
       preferLongitudeFirst = host.includes('2gis.') || host.endsWith('2gis.com');
+      const parameterFragments = [];
       ['m', 'll', 'sll', 'point', 'pt', 'q', 'query', 'whatshere[point]'].forEach(function (key) {
-        url.searchParams.getAll(key).forEach(function (entry) { fragments.push(entry); });
+        url.searchParams.getAll(key).forEach(function (entry) { parameterFragments.push(entry); });
       });
-      fragments.push(url.pathname, url.search, url.hash, url.href);
+      if (preferLongitudeFirst) {
+        fragments.push(url.pathname, url.hash);
+        parameterFragments.forEach(function (entry) { fragments.push(entry); });
+      } else {
+        parameterFragments.forEach(function (entry) { fragments.push(entry); });
+        fragments.push(url.pathname, url.hash);
+      }
+      fragments.push(url.href);
     } catch (error) {
       fragments.push(clean);
     }
@@ -430,6 +437,17 @@
       }
     }
     return null;
+  }
+
+
+  function normalizeLocationCoordinates(location) {
+    if (!location || !location.mapUrl) return location;
+    const coordinates = extractCoordinatesFromMapUrl(location.mapUrl);
+    if (!coordinates) return location;
+    return Object.assign({}, location, {
+      latitude: coordinates.latitude,
+      longitude: coordinates.longitude,
+    });
   }
 
   function applyCoordinatesFromMapUrl(overwrite) {
@@ -454,7 +472,9 @@
     const productName = getControlValue(brandControls.productName) || settings.product;
     const slug = slugify(settings.companyId + "-" + (productName || "product") + "-" + (settings.code || Date.now().toString(36))).slice(0, 90);
     const productImageUrl = isSafeOptionalUrl(getControlValue(extraControls.productImageUrl), "Product image URL");
-    const activeLocations = pickupLocations.filter(function (location) { return location.active !== false; });
+    const activeLocations = pickupLocations
+      .filter(function (location) { return location.active !== false; })
+      .map(normalizeLocationCoordinates);
     const whatsappLink = buildWhatsAppLink(productName);
     const glovoLink = glovoParsed ? {
       enabled: true,
@@ -709,7 +729,6 @@
     activeFinderProvider = config.key;
     if (linkFinderProviderName) linkFinderProviderName.textContent = config.name;
     if (linkFinderHelp) linkFinderHelp.textContent = config.help;
-    if (linkFinderFrame) linkFinderFrame.src = config.url;
     if (linkFinderOpenButton) linkFinderOpenButton.textContent = "Open " + config.name + " website";
     document.querySelectorAll("[data-link-finder-provider]").forEach(function (button) {
       button.classList.toggle("is-active", button.dataset.linkFinderProvider === config.key);
@@ -731,7 +750,6 @@
     if (!linkFinderModal) return;
     linkFinderModal.hidden = true;
     document.body.classList.remove("link-finder-open");
-    if (linkFinderFrame) linkFinderFrame.src = "about:blank";
   }
 
   function openFinderWebsite() {
