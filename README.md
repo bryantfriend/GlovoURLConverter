@@ -2,7 +2,7 @@
 
 Static Smart Product Link Hub for creating one customer-facing product page and one branded QR code for Glovo, Yandex, WhatsApp contact, and pickup locations.
 
-The app still preserves the original Glovo exact web product behavior, but the QR/Instagram/TikTok link now points to your own public product hub page first.
+The converter also produces a validated **OAKO product URL** from a normal Glovo browser link. Paste that URL into an OAKO product external link and select **Glovo** as its link type. The OAKO product page renders the action as a user-submitted GET form, which preserves the exact product on mobile instead of handing a normal verified link to the Glovo app.
 
 ## Customer Flow
 
@@ -17,7 +17,9 @@ QR / Instagram / TikTok link
 - Adds a provider link finder modal for Glovo and Yandex. It opens the provider website, supports an external-tab fallback, and lets the user paste or clipboard-capture the selected product/store URL for conversion.
 - Builds a product hub with product name, description, image URL, SKU, campaign, badge, price text, brand colors, and QR styling.
 - Keeps the working Glovo product URL parser for `productId`, `externalProductId`, store slug, and content path.
-- Uses the existing compact Glovo `/q/?s=...&c=...&p=...&e=...` route for the Glovo action so exact web product behavior is preserved.
+- Produces a canonical Glovo URL for the OAKO product editor while preserving all query parameters, including `content`, `search`, `productId`, and `externalProductId`.
+- Renders Glovo actions in newly generated public hubs as browser-safe GET forms so exact web product behavior is preserved on phones.
+- Adds a same-tab **Sign in first with Email** action whose Glovo `returnPath` contains the complete product query. This avoids the Google OAuth-to-app handoff that can lose the selected item on Android.
 - Accepts conservative Yandex-related URLs, including `yandex.*`, `eda.yandex.kg`, `ya.cc`, and `yandexgo.*`, and preserves the pasted URL unless a simple Eats restaurant route can safely use `/q/?y=...`.
 - Adds a WhatsApp contact button using the product owner phone number.
 - Adds pickup locations with name, address, hours, phone, latitude, longitude, and map URL.
@@ -66,7 +68,9 @@ The code is structured so that can be added behind a future storage adapter.
 
 ## Glovo Behavior
 
-Glovo product links continue to require `productId` and `externalProductId`. The public hub's Glovo button uses the compact `/q/` route, which reconstructs the exact Glovo web product URL and opens it through the existing redirect/analytics flow.
+Glovo product links continue to require `productId` and `externalProductId`. The converter's **OAKO product URL** is the validated canonical Glovo URL. It may look similar to the input because the mobile fix is intentionally applied by the OAKO button: choosing the **Glovo** link type makes that button submit a GET form instead of following a normal Android app link.
+
+The public hub uses the same browser-safe form behavior. If the customer is logged out, they should use **Sign in first with Email** before ordering; after email authentication Glovo receives the complete exact-product return path. Google and Facebook authentication can still be claimed by the installed Glovo Android app because that callback is controlled by Glovo. Older generated hub payloads that contain the previous compact/open wrapper are unwrapped at runtime when possible.
 
 Native Glovo exact product deep linking is intentionally not forced because testing did not find a reliable supported route.
 
@@ -93,10 +97,11 @@ If one pickup location exists, the public map button opens its `mapUrl` directly
 6. Copy the public product hub link and open it on desktop.
 7. Open the same link at mobile width around 360px.
 8. Tap Order on Glovo and confirm it reaches the existing Glovo web product flow.
-9. Tap Order on Yandex and confirm it opens the saved Yandex URL.
-10. Tap View map locations with one and multiple pickup locations.
-11. Test geolocation allowed and denied.
-12. Test invalid URLs and a hub with no usable action.
+9. Tap **Sign in first with Email** and confirm the Glovo login URL contains the fully encoded product path in `returnPath`.
+10. Tap Order on Yandex and confirm it opens the saved Yandex URL.
+11. Tap View map locations with one and multiple pickup locations.
+12. Test geolocation allowed and denied.
+13. Test invalid URLs and a hub with no usable action.
 
 ## Limitations
 
