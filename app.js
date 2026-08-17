@@ -1,5 +1,5 @@
 (function () {
-  const sampleUrl = "https://glovoapp.com/en/kg/bishkek/stores/glovo-express-bsk?content=hleb-vypechka-sc.42969216%2Fsvezhiy-hleb-c.42969150&productId=4611686018602341182&externalProductId=470010";
+  const sampleUrl = "https://glovoapp.com/en/kg/bishkek/stores/glovo-express-bsk?content=hleb-vypechka-sc.42969216%2Fsvezhiy-hleb-c.42969150&search=biscot&productId=4611686018602342914&externalProductId=470024";
 
   const sourceUrl = document.getElementById("sourceUrl");
   const convertButton = document.getElementById("convertButton");
@@ -10,6 +10,8 @@
   const landingUrl = document.getElementById("landingUrl");
   const socialShortUrl = document.getElementById("socialShortUrl");
   const trailingDotUrl = document.getElementById("trailingDotUrl");
+  const oakoProductLinkResult = document.getElementById("oakoProductLinkResult");
+  const oakoProductUrl = document.getElementById("oakoProductUrl");
   const statusCard = document.getElementById("statusCard");
   const statusText = document.getElementById("statusText");
   const qrCanvas = document.getElementById("qrCanvas");
@@ -479,11 +481,11 @@
     const glovoLink = glovoParsed ? {
       enabled: true,
       originalUrl: glovoParsed.url.href,
-      convertedUrl: buildSocialShortUrl(glovoParsed, settings),
+      convertedUrl: glovoParsed.canonical,
       buttonLabel: "Order on Glovo",
       helperText: "Open the product on Glovo",
       platformName: "Glovo",
-      openMode: "browser-preserved",
+      openMode: "browser-form",
       productId: glovoParsed.productId,
       externalProductId: glovoParsed.externalProductId,
       content: glovoParsed.content,
@@ -552,6 +554,7 @@
       if (!link || !link.enabled) return { enabled: false };
       return {
         enabled: true,
+        originalUrl: link.originalUrl,
         convertedUrl: link.convertedUrl,
         buttonLabel: link.buttonLabel,
         helperText: link.helperText,
@@ -1152,6 +1155,12 @@
       currentGlovoParsed = glovoParsed;
       currentYandexParsed = yandexParsed;
 
+      fields.storeSlug.textContent = primaryParsed ? primaryParsed.storeSlug : "-";
+      fields.productId.textContent = glovoParsed ? glovoParsed.productId : "Not supported";
+      fields.externalProductId.textContent = glovoParsed ? glovoParsed.externalProductId : "Not used";
+      fields.contentPath.textContent = primaryParsed ? primaryParsed.content || "-" : "-";
+      if (primaryParsed) fillDefaultProductFields(primaryParsed);
+
       const settings = getQrSettings();
       currentHub = createProductHub(glovoParsed, yandexParsed, settings);
       const publicUrl = buildProductHubUrl(currentHub);
@@ -1159,12 +1168,9 @@
       trailingDotUrl.value = glovoParsed ? buildTrailingDotUrl(glovoParsed.canonical) : yandexParsed ? yandexParsed.canonical : "";
       landingUrl.value = glovoParsed ? buildLandingUrl(glovoParsed.canonical, settings, "glovo") : "";
       socialShortUrl.value = publicUrl;
+      oakoProductUrl.value = glovoParsed ? glovoParsed.canonical : "";
+      oakoProductLinkResult.hidden = !glovoParsed;
 
-      fields.storeSlug.textContent = primaryParsed ? primaryParsed.storeSlug : "-";
-      fields.productId.textContent = glovoParsed ? glovoParsed.productId : "Not supported";
-      fields.externalProductId.textContent = glovoParsed ? glovoParsed.externalProductId : "Not used";
-      fields.contentPath.textContent = primaryParsed ? primaryParsed.content || "-" : "-";
-      if (primaryParsed) fillDefaultProductFields(primaryParsed);
       updateHubPreview(currentHub);
       saveHubToHistory(currentHub, publicUrl);
 
@@ -1173,9 +1179,11 @@
       if (shortUrlStats) {
         shortUrlStats.textContent = "Hub link length: " + publicUrl.length + " characters. Use the QR for long rich hubs.";
       }
-      setStatus("Product hub ready", false);
+      setStatus(glovoParsed ? "OAKO product URL ready" : "Product hub ready", false);
     } catch (error) {
       results.hidden = true;
+      oakoProductLinkResult.hidden = true;
+      oakoProductUrl.value = "";
       currentCanonicalUrl = "";
       currentParsedUrl = null;
       currentGlovoParsed = null;
@@ -1243,6 +1251,8 @@
   clearButton.addEventListener("click", () => {
     sourceUrl.value = "";
     results.hidden = true;
+    oakoProductLinkResult.hidden = true;
+    oakoProductUrl.value = "";
     currentCanonicalUrl = "";
     currentParsedUrl = null;
     currentGlovoParsed = null;
@@ -1294,6 +1304,7 @@
   });
 
   sourceUrl.addEventListener("input", function () {
+    oakoProductLinkResult.hidden = true;
     if (sourceUrl.value.trim()) setStatus("Ready to build", false);
     else setStatus("Ready", false);
   });

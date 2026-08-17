@@ -49,6 +49,8 @@ h1 { margin: 0; font-family: Georgia, 'Times New Roman', serif; font-size: clamp
 .price { display: inline-flex; margin-top: 12px; padding: 8px 12px; border-radius: 999px; color: var(--primary); background: rgba(255,255,255,0.75); font-weight: 900; }
 .content-stack { display: grid; gap: 12px; padding: 0 18px 22px; }
 .action-list { display: grid; gap: 11px; }
+.action-card-form { margin: 0; }
+.action-card-form .action-card { width: 100%; text-align: left; font: inherit; }
 .action-card { display: grid; grid-template-columns: 58px minmax(0, 1fr) 20px; gap: 14px; align-items: center; min-height: 86px; padding: 14px; border: 1px solid rgba(255,255,255,0.78); border-radius: 20px; color: inherit; background: var(--card); box-shadow: 0 12px 30px rgba(70, 45, 31, 0.12); text-decoration: none; cursor: pointer; }
 .action-icon { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 16px; color: #fff; background: var(--primary); font-size: 1.75rem; font-weight: 900; }
 .action-icon.glovo { background: linear-gradient(135deg, #ffd233, #ffc21c); color: #009d80; }

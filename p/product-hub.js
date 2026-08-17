@@ -53,17 +53,74 @@
     return "map";
   }
 
+  function getGlovoProductUrl(link) {
+    const candidates = [link && link.originalUrl, link && link.convertedUrl];
+
+    for (const value of candidates) {
+      if (!value) continue;
+      try {
+        let candidate = new URL(value, window.location.href);
+        const embeddedTarget = candidate.searchParams.get("u");
+        const normalizedHost = candidate.hostname.replace(/\.$/, "").toLowerCase();
+
+        // Older hubs stored an OAKO open.html wrapper. Unwrap its target so
+        // those links also gain the browser-safe form navigation.
+        if (normalizedHost !== "glovoapp.com" && normalizedHost !== "www.glovoapp.com" && embeddedTarget) {
+          candidate = new URL(embeddedTarget);
+        }
+
+        const targetHost = candidate.hostname.replace(/\.$/, "").toLowerCase();
+        if (targetHost !== "glovoapp.com" && targetHost !== "www.glovoapp.com") continue;
+        if (candidate.protocol !== "https:" && candidate.protocol !== "http:") continue;
+
+        candidate.protocol = "https:";
+        candidate.hostname = "glovoapp.com";
+        candidate.port = "";
+        return candidate;
+      } catch (error) {}
+    }
+
+    return null;
+  }
+
+  function fillActionContent(control, action, icon, link) {
+    control.innerHTML = '<span class="action-icon"></span><span><strong></strong><span></span></span><span class="chevron" aria-hidden="true">›</span>';
+    const iconNode = control.querySelector(".action-icon");
+    iconNode.classList.add(iconClassFor(action));
+    iconNode.textContent = icon;
+    control.querySelector("strong").textContent = text(link.buttonLabel, action);
+    control.querySelector("span span").textContent = text(link.helperText, "Open delivery link");
+  }
+
   function buildAction(link, action, icon, primary, hub) {
+    const glovoTarget = action === "glovo_click" ? getGlovoProductUrl(link) : null;
+    if (glovoTarget) {
+      const form = document.createElement("form");
+      form.className = "action-card-form";
+      form.method = "get";
+      form.action = glovoTarget.origin + glovoTarget.pathname;
+      glovoTarget.searchParams.forEach(function (value, name) {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+      });
+
+      const button = document.createElement("button");
+      button.type = "submit";
+      button.className = "action-card" + (primary ? " primary" : "");
+      fillActionContent(button, action, icon, link);
+      form.appendChild(button);
+      form.addEventListener("submit", function () { recordLocal(action, hub); });
+      return form;
+    }
+
     const anchor = document.createElement("a");
     anchor.className = "action-card" + (primary ? " primary" : "");
     anchor.href = safeHref(link.convertedUrl || link.originalUrl);
     anchor.rel = "noopener noreferrer";
-    anchor.innerHTML = '<span class="action-icon"></span><span><strong></strong><span></span></span><span class="chevron" aria-hidden="true">›</span>';
-    const iconNode = anchor.querySelector(".action-icon");
-    iconNode.classList.add(iconClassFor(action));
-    iconNode.textContent = icon;
-    anchor.querySelector("strong").textContent = text(link.buttonLabel, action);
-    anchor.querySelector("span span").textContent = text(link.helperText, "Open delivery link");
+    fillActionContent(anchor, action, icon, link);
     anchor.addEventListener("click", function () { recordLocal(action, hub); });
     return anchor;
   }
